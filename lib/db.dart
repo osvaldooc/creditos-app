@@ -12,6 +12,10 @@ class AppDb {
   static const _nombre = 'creditos.db';
   static const _uuid = Uuid();
 
+  /// Versión del esquema. Súbela cada vez que agregues/cambies tablas
+  /// y añade el cambio correspondiente en [onUpgrade].
+  static const _version = 2;
+
   static String newId() => _uuid.v4();
 
   static Future<String> dbPath() async {
@@ -23,6 +27,7 @@ class AppDb {
     if (_db != null) return _db!;
     final path = await dbPath();
 
+    // Si la base no existe, copia el asset (instalación nueva).
     if (!await File(path).exists()) {
       await Directory(p.dirname(path)).create(recursive: true);
       final data = await rootBundle.load('assets/$_nombre');
@@ -34,9 +39,37 @@ class AppDb {
 
     final db = await openDatabase(
       path,
+      version: _version,
       onConfigure: (db) async {
         // SQLite ignora las llaves foráneas si no se activa esto.
         await db.execute('PRAGMA foreign_keys = ON');
+      },
+      onCreate: (db, version) async {
+        // Se ejecuta solo en instalaciones NUEVAS.
+        // Crea aquí las tablas que el asset no tenga.
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS zonas (
+            id TEXT PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            municipio TEXT,
+            activa INTEGER NOT NULL DEFAULT 1,
+            creado_en TEXT NOT NULL DEFAULT (datetime('now'))
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        // Se ejecuta al ACTUALIZAR (archivo viejo -> versión nueva).
+        if (oldVersion < 2) {
+          await db.execute('''
+            CREATE TABLE IF NOT EXISTS zonas (
+              id TEXT PRIMARY KEY,
+              nombre TEXT NOT NULL,
+              municipio TEXT,
+              activa INTEGER NOT NULL DEFAULT 1,
+              creado_en TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+          ''');
+        }
       },
     );
 
@@ -45,7 +78,11 @@ class AppDb {
             await db.rawQuery('SELECT COUNT(*) FROM zonas')) ??
         0;
     if (zonas == 0) {
-      await db.insert('zonas', {'nombre': 'Centro', 'municipio': 'Puebla'});
+      await db.insert('zonas', {
+        'id': newId(),
+        'nombre': 'Centro',
+        'municipio': 'Puebla',
+      });
     }
 
     _db = db;

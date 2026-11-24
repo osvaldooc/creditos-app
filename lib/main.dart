@@ -14,8 +14,20 @@ void toast(BuildContext c, String m) =>
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppDb.instance;
-  runApp(const CreditosApp());
+  try {
+    await AppDb.instance;
+    runApp(const CreditosApp());
+  } catch (e, st) {
+    runApp(MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Error al abrir la base')),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: SelectableText('$e\n\n$st'),
+        ),
+      ),
+    ));
+  }
 }
 
 class CreditosApp extends StatelessWidget {

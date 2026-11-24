@@ -392,7 +392,7 @@ class _SolicitudFormState extends State<SolicitudForm> {
   List<Fila> _zonas = [];
   String? _clienteId;
   String? _avalId;
-  int? _zonaId;
+  String? _zonaId; // 👈 antes era int?
   bool _cargando = true;
   bool _guardando = false;
 
@@ -421,7 +421,8 @@ class _SolicitudFormState extends State<SolicitudForm> {
       _clientes = clientes;
       _avales = avales;
       _zonas = zonas;
-      _zonaId = zonas.isNotEmpty ? zonas.first['id'] as int : null;
+      // 👈 ahora se lee como String
+      _zonaId = zonas.isNotEmpty ? zonas.first['id'] as String : null;
       _cargando = false;
     });
   }
@@ -494,10 +495,11 @@ class _SolicitudFormState extends State<SolicitudForm> {
               items: _items<String>(_avales),
               onChanged: (v) => _avalId = v,
             ),
-            DropdownButtonFormField<int>(
+            // 👈 de <int> a <String>
+            DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Zona'),
               value: _zonaId,
-              items: _items<int>(_zonas),
+              items: _items<String>(_zonas),
               onChanged: (v) => _zonaId = v,
             ),
             TextField(
